@@ -339,11 +339,11 @@
       </div>
       <div class="num-input-row">
         <span>いちばん たかい:</span>
-        <div><input type="number" id="set-max" value="500" step="10"> 円</div>
+        <div><input type="number" id="set-max" value="800" step="10"> 円</div>
       </div>
       <div class="num-input-row">
-        <span>きざみ (10,50,100...):</span>
-        <div><input type="number" id="set-step" value="10" step="10"> 円</div>
+        <span>きざみ (1,10,50,100...):</span>
+        <div><input type="number" id="set-step" value="10" step="1"> 円</div>
       </div>
     </div>
 
@@ -408,10 +408,9 @@ function noteSVG(val, w, h) {
 let state = {
   settings: {
     priceMin: 10,
-    priceMax: 500,
+    priceMax: 800,
     priceStep: 10,
-    // 5000円を追加
-    initWallet: { 5000:1, 1000:3, 500:2, 100:5, 50:2, 10:10, 5:2, 1:10 }
+    initWallet: { 5000:0, 1000:1, 500:2, 100:0, 50:3, 10:5, 5:0, 1:0 }
   },
   moneys: [], 
   targetPrice: 0,
