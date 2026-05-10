@@ -1,0 +1,823 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>お買い物シミュレーション</title>
+<style>
+  :root {
+    --bg: #f5f0e6;
+    --surface: #ffffff;
+    --border: #dcd0ba;
+    --text: #4a3f35;
+    --sub: #8c7c68;
+    --accent: #e67e22;
+    --accent-hover: #d35400;
+    --correct: #27ae60;
+    --wrong: #e74c3c;
+    --wallet-bg: #eaddc5;
+    --tray-bg: #faf7f2;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body, html {
+    width: 100%; height: 100%;
+    font-family: 'Hiragino Maru Gothic ProN', 'BIZ UDPGothic', sans-serif;
+    background-color: var(--bg);
+    color: var(--text);
+    overflow: hidden;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  #app {
+    display: flex;
+    flex-direction: column;
+    width: 100%; height: 100%;
+    position: relative;
+  }
+
+  /* 上部：お店エリア */
+  #shop-area {
+    flex: 0 0 25%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    background: #fff;
+    border-bottom: 3px dashed var(--border);
+    position: relative;
+    z-index: 10;
+  }
+  #item-emoji {
+    font-size: 80px;
+    line-height: 1;
+    filter: drop-shadow(0 4px 6px rgba(0,0,0,0.1));
+    transition: transform 0.3s;
+  }
+  #item-price {
+    font-size: 32px;
+    font-weight: bold;
+    margin-top: 8px;
+    background: var(--text);
+    color: #fff;
+    padding: 4px 20px;
+    border-radius: 20px;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.2);
+  }
+
+  /* 中央：トレイ（支払い）エリア */
+  #tray-area {
+    flex: 0 0 35%;
+    background: var(--tray-bg);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 10px;
+    position: relative;
+  }
+  #tray-header {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 0 10px;
+    margin-bottom: 10px;
+  }
+  #tray-total {
+    font-size: 24px;
+    font-weight: bold;
+    color: var(--accent);
+  }
+  #action-buttons {
+    display: flex;
+    gap: 12px;
+  }
+  .btn {
+    padding: 12px 24px;
+    border-radius: 24px;
+    border: none;
+    font-size: 18px;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+    transition: transform 0.1s, box-shadow 0.1s;
+    font-family: inherit;
+  }
+  .btn:active {
+    transform: translateY(4px);
+    box-shadow: 0 0 0 rgba(0,0,0,0);
+  }
+  .btn-pay { background: var(--correct); color: white; }
+  .btn-cancel { background: #95a5a6; color: white; }
+
+  /* 下部：財布エリア */
+  #wallet-area {
+    flex: 1;
+    background: var(--wallet-bg);
+    border-top: 4px solid #c9bca0;
+    padding: 10px;
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    grid-template-rows: repeat(2, 1fr);
+    gap: 10px;
+    position: relative;
+  }
+  .denom-zone {
+    background: rgba(255,255,255,0.4);
+    border-radius: 12px;
+    border: 2px dashed rgba(0,0,0,0.1);
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  .denom-label {
+    position: absolute;
+    bottom: 2px; right: 6px;
+    font-size: 14px;
+    font-weight: bold;
+    color: var(--sub);
+    opacity: 0.7;
+    pointer-events: none;
+  }
+
+  #money-container {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    pointer-events: none; /* マウスイベントは個別のアイテムで受ける */
+    z-index: 20;
+  }
+  .money-item {
+    position: absolute;
+    pointer-events: auto;
+    cursor: pointer;
+    transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
+    transform-origin: center center;
+    /* タッチしやすくするため少しパディングを持たせる仮想枠 */
+    display: flex; align-items: center; justify-content: center;
+  }
+  .money-item svg {
+    display: block;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
+  }
+  .money-item:active svg {
+    filter: drop-shadow(0 0px 1px rgba(0,0,0,0.4));
+    transform: scale(0.95);
+  }
+
+  #feedback {
+    position: absolute;
+    top: 40%; left: 50%;
+    transform: translate(-50%, -50%) scale(0.5);
+    background: rgba(255,255,255,0.95);
+    padding: 20px 40px;
+    border-radius: 30px;
+    font-size: 32px;
+    font-weight: bold;
+    color: var(--text);
+    box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    opacity: 0;
+    pointer-events: none;
+    z-index: 100;
+    transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+  #feedback.show {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+
+  #gear-btn {
+    position: absolute; top: 10px; right: 10px;
+    width: 40px; height: 40px;
+    background: #fff; border-radius: 50%;
+    border: 2px solid var(--border);
+    display: flex; align-items: center; justify-content: center;
+    cursor: pointer; z-index: 30;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+  }
+
+  /* 設定画面モーダル */
+  #settings-modal {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.6);
+    display: none; justify-content: center; align-items: center;
+    z-index: 200;
+  }
+  #settings-content {
+    background: var(--surface);
+    width: 90%; max-width: 500px; max-height: 90%;
+    border-radius: 20px;
+    padding: 20px;
+    overflow-y: auto;
+    display: flex; flex-direction: column; gap: 15px;
+  }
+  .setting-group {
+    background: var(--bg); padding: 15px; border-radius: 12px;
+  }
+  .setting-title { font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid var(--border); padding-bottom: 5px;}
+  .radio-group { display: flex; gap: 10px; margin-bottom: 10px; }
+  .radio-label {
+    flex: 1; text-align: center; padding: 10px;
+    background: #fff; border: 2px solid var(--border); border-radius: 8px;
+    font-weight: bold; cursor: pointer;
+  }
+  input[type="radio"]:checked + .radio-label {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+  input[type="radio"] { display: none; }
+  
+  .num-input-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
+  .num-input-row input {
+    width: 80px; padding: 8px; border-radius: 8px; border: 2px solid var(--border);
+    font-size: 16px; text-align: right;
+  }
+  .wallet-init-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+  }
+  .wallet-init-item {
+    display: flex; align-items: center; justify-content: space-between;
+    background: #fff; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border);
+  }
+  .wallet-init-item input { width: 50px; text-align: right; border: 1px solid #ccc; border-radius: 4px; padding: 4px; }
+  
+  #close-settings-btn {
+    padding: 12px; background: var(--accent); color: #fff; border: none;
+    border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer;
+  }
+
+</style>
+</head>
+<body>
+
+<div id="app">
+  <!-- 設定ボタン -->
+  <button id="gear-btn" onclick="openSettings()">⚙️</button>
+
+  <!-- お店エリア -->
+  <div id="shop-area">
+    <div id="item-emoji">🍎</div>
+    <div id="item-price">100円</div>
+  </div>
+
+  <!-- トレイ（支払い）エリア -->
+  <div id="tray-area">
+    <div id="tray-header">
+      <div>だしているお金: <span id="tray-total">0</span>円</div>
+      <div id="action-buttons">
+        <button class="btn btn-cancel" onclick="handleCannotBuy()">やめる</button>
+        <button class="btn btn-pay" onclick="handlePay()">しはらう</button>
+      </div>
+    </div>
+    <!-- トレイの枠として視覚的なガイド -->
+    <div style="flex:1; width: 100%; border: 2px dashed #ccc; border-radius: 16px; background: rgba(255,255,255,0.5);"></div>
+  </div>
+
+  <!-- 財布エリア (背景のゾーン分けのみ) -->
+  <div id="wallet-area">
+    <div class="denom-zone" id="zone-10000"><div class="denom-label">10000円</div></div>
+    <div class="denom-zone" id="zone-5000"><div class="denom-label">5000円</div></div>
+    <div class="denom-zone" id="zone-1000"><div class="denom-label">1000円</div></div>
+    <div class="denom-zone" id="zone-500"><div class="denom-label">500円</div></div>
+    <div class="denom-zone" id="zone-100"><div class="denom-label">100円</div></div>
+    <div class="denom-zone" id="zone-50"><div class="denom-label">50円</div></div>
+    <div class="denom-zone" id="zone-10"><div class="denom-label">10円</div></div>
+    <div class="denom-zone" id="zone-5"><div class="denom-label">5円</div></div>
+    <div class="denom-zone" id="zone-1"><div class="denom-label">1円</div></div>
+  </div>
+
+  <!-- 動くお金が入るコンテナ -->
+  <div id="money-container"></div>
+
+  <!-- フィードバック表示 -->
+  <div id="feedback"></div>
+</div>
+
+<div id="settings-modal">
+  <div id="settings-content">
+    <h2 style="text-align: center; color: var(--accent);">⚙️ せってい</h2>
+    
+    <div class="setting-group">
+      <div class="setting-title">れんしゅうモード</div>
+      <div class="radio-group">
+        <label><input type="radio" name="payMode" value="exact" checked> <div class="radio-label">ピッタリはらう</div></label>
+        <label><input type="radio" name="payMode" value="change"> <div class="radio-label">おつりをもらう</div></label>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <div class="setting-title">ほしいものの ネダン</div>
+      <div class="num-input-row">
+        <span>いちばん やすい:</span>
+        <div><input type="number" id="set-min" value="10" step="10"> 円</div>
+      </div>
+      <div class="num-input-row">
+        <span>いちばん たかい:</span>
+        <div><input type="number" id="set-max" value="500" step="10"> 円</div>
+      </div>
+      <div class="num-input-row">
+        <span>きざみ (10,50,100...):</span>
+        <div><input type="number" id="set-step" value="10" step="10"> 円</div>
+      </div>
+    </div>
+
+    <div class="setting-group">
+      <div class="setting-title">さいしょの おさいふの なかみ</div>
+      <div class="wallet-init-grid" id="wallet-init-list">
+        <!-- JSで生成 -->
+      </div>
+    </div>
+
+    <button id="close-settings-btn" onclick="applySettings()">けってい して はじめる</button>
+  </div>
+</div>
+
+<script>
+const EMOJIS = ['🍎','🍌','🍇','🍉','🍔','🍟','🍰','🍩','🍦','🧸','🚗','⚽️','🏀','🎮','📚','🖍','👕','👟','🌻','🌷'];
+const DENOMS = [10000, 5000, 1000, 500, 100, 50, 10, 5, 1];
+
+function coinSVG(val, size) {
+  const C = {
+    1:   { bg:'#b2b2b2', inner:'#d0d0d0', rim:'#444444', text:'1',   hole:false },
+    5:   { bg:'#c8a84b', inner:'#e0c060', rim:'#5a3a00', text:'5',   hole:true  },
+    10:  { bg:'#b87333', inner:'#d4946a', rim:'#4a1800', text:'10',  hole:false },
+    50:  { bg:'#b0b0b0', inner:'#d0d0d0', rim:'#333333', text:'50',  hole:true  },
+    100: { bg:'#a8a8a8', inner:'#c8c8c8', rim:'#2a2a2a', text:'100', hole:false },
+    500: { bg:'#a0a8b0', inner:'#c0c8d0', rim:'#1a3060', text:'500', hole:false },
+  };
+  const c = C[val];
+  if(!c) return '';
+  const r = size / 2;
+  const holeR = size * 0.12;
+  const ts = val >= 100 ? size * 0.28 : size * 0.36;
+  let textY = c.hole ? r * 0.55 + ts * 0.35 : r + ts * 0.38;
+  const hole = c.hole ? `<circle cx="${r}" cy="${r}" r="${holeR}" fill="var(--bg)" stroke="${c.rim}" stroke-width="1"/>` : '';
+
+  return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="${r}" cy="${r}" r="${r-1}" fill="${c.rim}"/>
+  <circle cx="${r}" cy="${r}" r="${r-3}" fill="${c.bg}"/>
+  <circle cx="${r}" cy="${r}" r="${r-5}" fill="${c.inner}" opacity="0.6"/>
+  ${hole}
+  <text x="${r}" y="${textY}" text-anchor="middle" font-size="${ts}" font-weight="900" fill="${c.rim}" font-family="sans-serif">${c.text}</text>
+</svg>`;
+}
+
+function noteSVG(val, w, h) {
+  const N = {
+    1000:  { bg:'#ede0c4', border:'#7a5010', inner:'#f8f0dc', text:'1000'  },
+    5000:  { bg:'#e8ddc0', border:'#5a6820', inner:'#f5ecd4', text:'5000'  },
+    10000: { bg:'#e4dccc', border:'#304878', inner:'#f2eadc', text:'10000' },
+  };
+  const c = N[val];
+  if(!c) return '';
+  const ts = val >= 10000 ? h * 0.35 : h * 0.4;
+  return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
+  <rect x="1" y="1" width="${w-2}" height="${h-2}" rx="4" fill="${c.border}"/>
+  <rect x="3" y="3" width="${w-6}" height="${h-6}" rx="3" fill="${c.bg}"/>
+  <rect x="6" y="6" width="${w-12}" height="${h-12}" rx="2" fill="${c.inner}" opacity="0.6"/>
+  <circle cx="${w/2}" cy="${h/2}" r="${h*0.3}" fill="#fff" opacity="0.3"/>
+  <text x="${w/2}" y="${h*0.65}" text-anchor="middle" font-size="${ts}" font-weight="900" fill="${c.border}" font-family="sans-serif">${c.text}</text>
+</svg>`;
+}
+
+let state = {
+  settings: {
+    mode: 'exact', // 'exact' or 'change'
+    priceMin: 10,
+    priceMax: 500,
+    priceStep: 10,
+    initWallet: { 10000:0, 5000:0, 1000:2, 500:1, 100:5, 50:1, 10:5, 5:1, 1:5 }
+  },
+  moneys: [], // { id, val, type, loc: 'wallet'|'tray', zIndex }
+  targetPrice: 0,
+  targetItem: '',
+  moneyIdCounter: 0
+};
+
+function initApp() {
+  buildSettingsUI();
+  // 初回リセット
+  resetWallet();
+  nextQuestion();
+  
+  // リサイズ時に再配置
+  window.addEventListener('resize', renderMoneys);
+}
+
+function resetWallet() {
+  state.moneys = [];
+  state.moneyIdCounter = 0;
+  for (let val of DENOMS) {
+    let count = state.settings.initWallet[val];
+    for (let i = 0; i < count; i++) {
+      addMoney(val, 'wallet');
+    }
+  }
+}
+
+function addMoney(val, loc) {
+  let type = val >= 1000 ? 'note' : 'coin';
+  state.moneys.push({
+    id: state.moneyIdCounter++,
+    val: val,
+    type: type,
+    loc: loc,
+    zIndex: state.moneyIdCounter
+  });
+}
+
+function nextQuestion() {
+  // 商品の生成
+  let min = state.settings.priceMin;
+  let max = state.settings.priceMax;
+  let step = state.settings.priceStep;
+  
+  // ステップ数に基づいてランダム選択
+  let steps = Math.floor((max - min) / step);
+  let randomStep = Math.floor(Math.random() * (steps + 1));
+  state.targetPrice = min + (randomStep * step);
+  
+  // 絵文字ランダム
+  state.targetItem = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
+  
+  // UI更新
+  document.getElementById('item-emoji').textContent = state.targetItem;
+  document.getElementById('item-price').textContent = state.targetPrice + '円';
+  
+  // アニメーション用に商品画像を揺らす
+  const emojiEl = document.getElementById('item-emoji');
+  emojiEl.style.transform = 'scale(1.2) rotate(10deg)';
+  setTimeout(() => { emojiEl.style.transform = 'scale(1) rotate(0deg)'; }, 300);
+
+  renderMoneys();
+  updateTrayTotal();
+}
+
+function renderMoneys() {
+  const container = document.getElementById('money-container');
+  
+  // 既存のDOMとstateの同期
+  state.moneys.forEach(m => {
+    let el = document.getElementById('money-' + m.id);
+    if (!el) {
+      el = document.createElement('div');
+      el.id = 'money-' + m.id;
+      el.className = 'money-item';
+      el.onclick = () => handleMoneyClick(m.id);
+      
+      // サイズとSVGの生成 (iPad向けに少し大きめ)
+      let size = window.innerWidth > 768 ? (m.type === 'note' ? 120 : 60) : (m.type === 'note' ? 90 : 50);
+      if (m.val === 500) size *= 1.1;
+      if (m.val <= 5) size *= 0.85;
+      
+      if (m.type === 'note') {
+        el.innerHTML = noteSVG(m.val, size * 1.8, size);
+        el.style.width = (size * 1.8) + 'px'; el.style.height = size + 'px';
+      } else {
+        el.innerHTML = coinSVG(m.val, size);
+        el.style.width = size + 'px'; el.style.height = size + 'px';
+      }
+      container.appendChild(el);
+    }
+    
+    // 座標の計算
+    let pos = calculatePosition(m);
+    el.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
+    el.style.zIndex = m.zIndex;
+  });
+  
+  // 削除されたお金のDOMクリーンアップ
+  Array.from(container.children).forEach(el => {
+    let id = parseInt(el.id.replace('money-', ''));
+    if (!state.moneys.find(m => m.id === id)) {
+      el.remove();
+    }
+  });
+}
+
+function calculatePosition(money) {
+  let el = document.getElementById('money-' + money.id);
+  let w = el.offsetWidth || 50;
+  let h = el.offsetHeight || 50;
+  
+  if (money.loc === 'wallet') {
+    // ウォレット内のゾーンを探す
+    let zone = document.getElementById('zone-' + money.val);
+    if (!zone) return {x:0, y:0};
+    let rect = zone.getBoundingClientRect();
+    
+    // 同じ金種の中で何番目か（重なりをずらすため）
+    let sameDenoms = state.moneys.filter(m => m.loc === 'wallet' && m.val === money.val).sort((a,b)=>a.id - b.id);
+    let index = sameDenoms.findIndex(m => m.id === money.id);
+    
+    // ゾーンの中央付近を基準に少しずらす
+    let baseX = rect.left + (rect.width - w) / 2;
+    let baseY = rect.top + (rect.height - h) / 2;
+    
+    // お札は縦に、コインは斜めにずらす
+    if (money.type === 'note') {
+      return { x: baseX, y: baseY - index * 4 };
+    } else {
+      return { x: baseX - index * 2, y: baseY - index * 3 };
+    }
+    
+  } else if (money.loc === 'tray') {
+    // トレイエリア内に配置
+    let tray = document.getElementById('tray-area');
+    let rect = tray.getBoundingClientRect();
+    
+    // トレイにあるお金を並べる
+    let trayMoneys = state.moneys.filter(m => m.loc === 'tray').sort((a,b)=>a.id - b.id);
+    let index = trayMoneys.findIndex(m => m.id === money.id);
+    
+    // 雑多に置かれている感を出すため、グリッド状＋少しランダム
+    let cols = Math.floor(rect.width / 70); // 1列あたりの幅目安
+    if(cols < 1) cols = 1;
+    let row = Math.floor(index / cols);
+    let col = index % cols;
+    
+    // ヘッダー分(約50px)を下げる
+    let startY = rect.top + 50;
+    
+    let x = rect.left + 20 + col * 70;
+    let y = startY + row * 60;
+    
+    // 少しランダムな揺らぎ（ID依存で固定）
+    let randX = (money.id * 13 % 20) - 10;
+    let randY = (money.id * 17 % 20) - 10;
+    
+    // はみ出し防止
+    x = Math.max(rect.left + 5, Math.min(x + randX, rect.right - w - 5));
+    y = Math.max(startY, Math.min(y + randY, rect.bottom - h - 5));
+
+    return { x: x, y: y };
+  }
+}
+
+function handleMoneyClick(id) {
+  let m = state.moneys.find(m => m.id === id);
+  if (!m) return;
+  
+  // zIndexを一番上にする
+  m.zIndex = ++state.moneyIdCounter;
+  
+  // 場所をトグル
+  m.loc = m.loc === 'wallet' ? 'tray' : 'wallet';
+  
+  renderMoneys();
+  updateTrayTotal();
+}
+
+function updateTrayTotal() {
+  let total = state.moneys.filter(m => m.loc === 'tray').reduce((sum, m) => sum + m.val, 0);
+  document.getElementById('tray-total').textContent = total;
+}
+
+// 動的計画法による「手持ちのお金でピッタリ払えるか」の判定
+function canPayExactWithWallet() {
+  let coins = state.moneys.filter(m => m.loc === 'wallet' || m.loc === 'tray').map(m => m.val);
+  let target = state.targetPrice;
+  let dp = new Array(target + 1).fill(false);
+  dp[0] = true;
+  for (let coin of coins) {
+    for (let j = target; j >= coin; j--) {
+      if (dp[j - coin]) dp[j] = true;
+    }
+  }
+  return dp[target];
+}
+
+// トレイと財布の合計を取得
+function getTotalAmount() {
+  return state.moneys.reduce((sum, m) => sum + m.val, 0);
+}
+
+// かえない（やめる）ボタンの処理
+function handleCannotBuy() {
+  let totalMoney = getTotalAmount();
+  let isCorrect = false;
+  let reason = "";
+
+  if (totalMoney < state.targetPrice) {
+    // 全額足しても足りない場合
+    isCorrect = true;
+    reason = "おかねが たりなかったね！";
+  } else if (state.settings.mode === 'exact' && !canPayExactWithWallet()) {
+    // ピッタリモードで、ピッタリの組み合わせが作れない場合
+    isCorrect = true;
+    reason = "ピッタリ はらえなかったね！";
+  }
+
+  if (isCorrect) {
+    playCorrect();
+    showFeedback("せいかい！\n" + reason);
+    // トレイのお金を財布に戻す
+    state.moneys.forEach(m => m.loc = 'wallet');
+    renderMoneys();
+    updateTrayTotal();
+    setTimeout(nextQuestion, 1500);
+  } else {
+    playWrong();
+    showFeedback("かえるよ！\nよく おさいふをみて！", true);
+  }
+}
+
+// 支払うボタンの処理
+function handlePay() {
+  let trayTotal = state.moneys.filter(m => m.loc === 'tray').reduce((sum, m) => sum + m.val, 0);
+  
+  if (trayTotal === 0) {
+    playWrong();
+    showFeedback("おかねを だしてね", true);
+    return;
+  }
+
+  if (state.settings.mode === 'exact') {
+    if (trayTotal === state.targetPrice) {
+      paymentSuccess();
+    } else if (trayTotal < state.targetPrice) {
+      playWrong();
+      showFeedback("たりないよ！", true);
+    } else {
+      playWrong();
+      showFeedback("ピッタリじゃないよ！", true);
+    }
+  } else {
+    // お釣りモード
+    if (trayTotal >= state.targetPrice) {
+      paymentSuccess(trayTotal - state.targetPrice);
+    } else {
+      playWrong();
+      showFeedback("たりないよ！", true);
+    }
+  }
+}
+
+function paymentSuccess(changeAmount = 0) {
+  playCorrect();
+  
+  // トレイのお金を商品に吸い込ませる演出
+  let shopRect = document.getElementById('item-emoji').getBoundingClientRect();
+  let targetX = shopRect.left + shopRect.width / 2 - 25;
+  let targetY = shopRect.top + shopRect.height / 2 - 25;
+
+  let trayMoneys = state.moneys.filter(m => m.loc === 'tray');
+  
+  trayMoneys.forEach(m => {
+    let el = document.getElementById('money-' + m.id);
+    if(el) {
+      el.style.transform = `translate(${targetX}px, ${targetY}px) scale(0.2)`;
+      el.style.opacity = '0';
+    }
+  });
+
+  // stateから削除
+  state.moneys = state.moneys.filter(m => m.loc !== 'tray');
+
+  let msg = "かえたよ！";
+  if (changeAmount > 0) {
+    msg = `かえたよ！\nおつりは ${changeAmount}円`;
+    // お釣りを財布に追加
+    let changeMoneys = getChangeDenoms(changeAmount);
+    changeMoneys.forEach(val => addMoney(val, 'wallet'));
+  }
+
+  showFeedback(msg);
+  updateTrayTotal();
+
+  // 少し待ってから次の問題へ
+  setTimeout(() => {
+    renderMoneys(); // 残ったお金とお釣りの描画
+    
+    // 財布が空になったかチェック
+    if (getTotalAmount() < state.settings.priceMin) {
+      showFeedback("おさいふが\nからっぽになったよ！");
+      setTimeout(openSettings, 2000); // 設定画面を開く
+    } else {
+      nextQuestion();
+    }
+  }, 1200);
+}
+
+function getChangeDenoms(amount) {
+  let change = [];
+  let remaining = amount;
+  for (let d of DENOMS) {
+    while (remaining >= d) {
+      change.push(d);
+      remaining -= d;
+    }
+  }
+  return change;
+}
+
+const AudioCtx = window.AudioContext || window.webkitAudioContext;
+let audioCtx = null;
+function getACtx() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; }
+
+function playCorrect() {
+  const ctx = getACtx(), t = ctx.currentTime;
+  // キラキラした音（ベル音に近い）
+  [ [1046.50, t, 0.1], [1318.51, t+0.08, 0.1], [1567.98, t+0.16, 0.3] ].forEach(([freq, start, dur]) => {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'sine'; o.frequency.value = freq;
+    g.gain.setValueAtTime(0, start);
+    g.gain.linearRampToValueAtTime(0.3, start + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.001, start + dur);
+    o.connect(g); g.connect(ctx.destination);
+    o.start(start); o.stop(start + dur + 0.1);
+  });
+}
+
+function playWrong() {
+  const ctx = getACtx(), t = ctx.currentTime;
+  const o = ctx.createOscillator(), g = ctx.createGain();
+  o.type = 'sawtooth';
+  o.frequency.setValueAtTime(300, t);
+  o.frequency.exponentialRampToValueAtTime(150, t + 0.3);
+  g.gain.setValueAtTime(0, t);
+  g.gain.linearRampToValueAtTime(0.2, t + 0.02);
+  g.gain.exponentialRampToValueAtTime(0.001, t + 0.3);
+  o.connect(g); g.connect(ctx.destination);
+  o.start(t); o.stop(t + 0.35);
+}
+
+function showFeedback(msg, autoHide = false) {
+  const el = document.getElementById('feedback');
+  el.innerText = msg;
+  el.classList.add('show');
+  
+  // 既存のタイマーをクリア
+  if(el.hideTimer) clearTimeout(el.hideTimer);
+  
+  if (autoHide) {
+    el.hideTimer = setTimeout(() => {
+      el.classList.remove('show');
+    }, 1500);
+  } else {
+    // 正解時などは次の問題生成時に消すため長めに
+    el.hideTimer = setTimeout(() => {
+      el.classList.remove('show');
+    }, 2000);
+  }
+}
+
+function buildSettingsUI() {
+  const list = document.getElementById('wallet-init-list');
+  list.innerHTML = '';
+  DENOMS.forEach(val => {
+    let item = document.createElement('div');
+    item.className = 'wallet-init-item';
+    item.innerHTML = `
+      <span>${val}円</span>
+      <div><input type="number" id="init-${val}" value="${state.settings.initWallet[val]}" min="0" max="20"> 枚</div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function openSettings() {
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function applySettings() {
+  // モード
+  const modeRadios = document.getElementsByName('payMode');
+  for (let r of modeRadios) { if(r.checked) state.settings.mode = r.value; }
+  
+  // 価格設定
+  state.settings.priceMin = parseInt(document.getElementById('set-min').value) || 10;
+  state.settings.priceMax = parseInt(document.getElementById('set-max').value) || 500;
+  state.settings.priceStep = parseInt(document.getElementById('set-step').value) || 10;
+  
+  // 下限が上限を超えないように
+  if(state.settings.priceMin > state.settings.priceMax) {
+    let temp = state.settings.priceMin;
+    state.settings.priceMin = state.settings.priceMax;
+    state.settings.priceMax = temp;
+  }
+  
+  // ウォレット初期値
+  let totalInit = 0;
+  DENOMS.forEach(val => {
+    let v = parseInt(document.getElementById(`init-${val}`).value) || 0;
+    state.settings.initWallet[val] = v;
+    totalInit += v;
+  });
+
+  if (totalInit === 0) {
+    alert("おさいふに おかねを いれてね！");
+    return;
+  }
+
+  document.getElementById('settings-modal').style.display = 'none';
+  resetWallet();
+  nextQuestion();
+}
+
+window.addEventListener('load', initApp);
+
+</script>
+</body>
+</html>
