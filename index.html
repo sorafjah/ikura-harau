@@ -37,7 +37,6 @@
     position: relative;
   }
 
-  /* 上部：お店エリア */
   #shop-area {
     flex: 0 0 18%;
     display: flex;
@@ -56,12 +55,8 @@
     gap: 8px;
     align-items: center;
   }
-  .left-actions {
-    justify-content: flex-start;
-  }
-  .right-actions {
-    justify-content: flex-end;
-  }
+  .left-actions { justify-content: flex-start; }
+  .right-actions { justify-content: flex-end; }
   
   #item-display {
     flex: 1.5;
@@ -70,10 +65,6 @@
     align-items: center;
     justify-content: center;
     gap: 15px;
-  }
-  
-  .side-spacer {
-    flex: 1;
   }
 
   #item-emoji {
@@ -110,7 +101,6 @@
   .btn-cancel { background: #e07a70; color: white; }
   .btn-secondary { background: #ecf0f1; color: var(--text); }
 
-  /* 中央：トレイ（支払い）エリア */
   #tray-area {
     flex: 0 0 16%;
     background: var(--tray-bg);
@@ -128,30 +118,45 @@
     background: rgba(255,255,255,0.6);
   }
 
-  /* 下部：財布エリア */
   #wallet-toolbar {
     background: var(--wallet-bg);
     padding: 6px 15px;
     display: flex;
-    justify-content: space-between;
+    justify-content: flex-start;
     align-items: center;
     border-top: 4px solid #c9bca0;
     font-weight: bold;
     color: var(--sub);
   }
-  
-  .btn-toggle {
-    background: #fff;
-    border: 2px solid var(--border);
-    border-radius: 12px;
-    padding: 4px 12px;
-    font-size: 14px;
-    font-weight: bold;
-    color: var(--text);
-    cursor: pointer;
-    box-shadow: 0 2px 0 rgba(0,0,0,0.1);
+
+  /* おつりボタンオーバーレイ */
+  #change-overlay {
+    position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+    background: rgba(0,0,0,0.5);
+    display: none; justify-content: center; align-items: center;
+    z-index: 150;
   }
-  .btn-toggle:active { transform: translateY(2px); box-shadow: 0 0 0; }
+  #change-box {
+    background: #fff;
+    border-radius: 28px;
+    padding: 36px 48px 24px;
+    text-align: center;
+    box-shadow: 0 12px 32px rgba(0,0,0,0.25);
+    display: flex; flex-direction: column; gap: 28px; align-items: center;
+  }
+  #change-msg {
+    font-size: 38px; font-weight: bold; color: var(--text); white-space: pre-wrap;
+    line-height: 1.5;
+  }
+  #btn-receive-change {
+    padding: 8px 24px;
+    background: transparent; color: var(--sub);
+    border: 2px solid var(--border); border-radius: 14px;
+    font-size: 15px; font-weight: bold; font-family: inherit;
+    cursor: pointer;
+    -webkit-tap-highlight-color: transparent;
+  }
+  #btn-receive-change:active { opacity: 0.6; }
 
   #wallet-area {
     flex: 1;
@@ -187,22 +192,15 @@
   }
   .money-item {
     position: absolute;
-    top: 0;
-    left: 0;
+    top: 0; left: 0;
     pointer-events: auto;
     cursor: pointer;
     transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.3s;
     transform-origin: center center;
     display: flex; align-items: center; justify-content: center;
   }
-  .money-item svg {
-    display: block;
-    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3));
-  }
-  .money-item:active svg {
-    filter: drop-shadow(0 0px 1px rgba(0,0,0,0.4));
-    transform: scale(0.95);
-  }
+  .money-item svg { display: block; filter: drop-shadow(0 2px 3px rgba(0,0,0,0.3)); }
+  .money-item:active svg { filter: drop-shadow(0 0px 1px rgba(0,0,0,0.4)); transform: scale(0.95); }
 
   #feedback {
     position: absolute;
@@ -222,12 +220,8 @@
     text-align: center;
     white-space: pre-wrap;
   }
-  #feedback.show {
-    opacity: 1;
-    transform: translate(-50%, -50%) scale(1);
-  }
+  #feedback.show { opacity: 1; transform: translate(-50%, -50%) scale(1); }
 
-  /* 歯車ボタン（薄く・丸なし） */
   #gear-btn {
     position: absolute; top: 10px; right: 10px;
     background: transparent; border: none;
@@ -245,70 +239,113 @@
   }
   #settings-content {
     background: var(--surface);
-    width: 90%; max-width: 500px; max-height: 90%;
+    width: 90%; max-width: 520px; max-height: 90%;
     border-radius: 20px;
     padding: 20px;
     overflow-y: auto;
-    display: flex; flex-direction: column; gap: 15px;
+    display: flex; flex-direction: column; gap: 16px;
   }
   .setting-group {
     background: var(--bg); padding: 15px; border-radius: 12px;
   }
-  .setting-title { font-weight: bold; margin-bottom: 10px; border-bottom: 2px solid var(--border); padding-bottom: 5px;}
-  
-  .num-input-row { display: flex; align-items: center; justify-content: space-between; margin-bottom: 8px; }
-  .num-input-row input {
-    width: 80px; padding: 8px; border-radius: 8px; border: 2px solid var(--border);
-    font-size: 16px; text-align: right;
-  }
-  .wallet-init-grid {
-    display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
-  }
-  .wallet-init-item {
+  .setting-title { font-weight: bold; margin-bottom: 12px; border-bottom: 2px solid var(--border); padding-bottom: 6px; font-size: 16px; }
+
+  /* iPad向け数値入力行 */
+  .num-input-row {
     display: flex; align-items: center; justify-content: space-between;
-    background: #fff; padding: 5px 10px; border-radius: 8px; border: 1px solid var(--border);
+    margin-bottom: 10px;
   }
-  .wallet-init-item input { width: 50px; text-align: right; border: 1px solid #ccc; border-radius: 4px; padding: 4px; }
-  
-  #close-settings-btn {
-    padding: 12px; background: var(--accent); color: #fff; border: none;
-    border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer;
+  .num-input-row label { font-size: 15px; }
+  .stepper {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .stepper-btn {
+    width: 44px; height: 44px;
+    border-radius: 50%; border: none;
+    background: var(--accent); color: #fff;
+    font-size: 22px; font-weight: bold;
+    cursor: pointer; display: flex; align-items: center; justify-content: center;
+    box-shadow: 0 3px 0 rgba(0,0,0,0.15);
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+  }
+  .stepper-btn:active { transform: translateY(3px); box-shadow: 0 0 0; }
+  .stepper-val {
+    min-width: 70px; text-align: center;
+    font-size: 20px; font-weight: bold;
+    background: #fff; border-radius: 10px;
+    padding: 6px 8px;
+    border: 2px solid var(--border);
   }
 
+  /* きざみボタン */
+  .step-btn-group {
+    display: flex; gap: 10px; flex-wrap: wrap; margin-top: 6px;
+  }
+  .step-btn {
+    flex: 1; min-width: 60px;
+    padding: 12px 8px;
+    border-radius: 14px; border: 3px solid var(--border);
+    background: #fff; color: var(--text);
+    font-size: 16px; font-weight: bold;
+    cursor: pointer; text-align: center;
+    transition: background 0.15s, border-color 0.15s;
+    -webkit-tap-highlight-color: transparent;
+  }
+  .step-btn.selected {
+    background: var(--accent); color: #fff; border-color: var(--accent);
+  }
+
+  /* 財布初期枚数グリッド */
+  .wallet-init-grid {
+    display: grid; grid-template-columns: repeat(2, 1fr); gap: 12px;
+  }
+  .wallet-init-item {
+    background: #fff; padding: 8px 10px; border-radius: 12px; border: 1px solid var(--border);
+    display: flex; align-items: center; justify-content: space-between;
+  }
+  .wallet-init-item .denom-name {
+    font-size: 16px; font-weight: bold; min-width: 50px;
+  }
+  .wallet-init-item .stepper { gap: 4px; }
+  .wallet-init-item .stepper-btn { width: 38px; height: 38px; font-size: 20px; }
+  .wallet-init-item .stepper-val { min-width: 44px; font-size: 18px; padding: 4px 6px; }
+  
+  #close-settings-btn {
+    padding: 16px; background: var(--accent); color: #fff; border: none;
+    border-radius: 14px; font-size: 20px; font-weight: bold; cursor: pointer;
+    box-shadow: 0 4px 0 rgba(0,0,0,0.15);
+    -webkit-tap-highlight-color: transparent;
+  }
+  #close-settings-btn:active { transform: translateY(4px); box-shadow: 0 0 0; }
 </style>
 </head>
 <body>
-
 <div id="app">
-  <button id="gear-btn" onclick="openSettings()">⚙️</button>
+  <button id="gear-btn">⚙️</button>
 
-  <!-- お店エリア -->
   <div id="shop-area">
     <div class="side-actions left-actions">
-      <button class="btn btn-pay" onclick="handlePay()">しはらう</button>
-      <button class="btn btn-cancel" onclick="handleCannotBuy()">かえない</button>
+      <button class="btn btn-pay" id="btn-pay">しはらう</button>
+      <button class="btn btn-cancel" id="btn-cancel">かえない</button>
     </div>
     <div id="item-display">
       <div id="item-emoji">🍎</div>
       <div id="item-price">100円</div>
     </div>
     <div class="side-actions right-actions">
-      <button class="btn btn-secondary" onclick="openSettings()">はじめから</button>
+      <button class="btn btn-secondary" id="btn-restart">はじめから</button>
     </div>
   </div>
 
-  <!-- トレイ（支払い）エリア -->
   <div id="tray-area">
     <div class="tray-box"></div>
   </div>
 
-  <!-- 財布ツールバー -->
   <div id="wallet-toolbar">
     <span>さいふのなか</span>
-    <button class="btn-toggle" onclick="toggleWalletView()" id="view-toggle-btn">ぜんぶ見える表示</button>
   </div>
 
-  <!-- 財布エリア -->
   <div id="wallet-area">
     <div class="denom-zone" id="zone-5000"><div class="denom-label">5000円</div></div>
     <div class="denom-zone" id="zone-1000"><div class="denom-label">1000円</div></div>
@@ -320,47 +357,63 @@
     <div class="denom-zone" id="zone-1"><div class="denom-label">1円</div></div>
   </div>
 
-  <!-- 動くお金が入るコンテナ -->
   <div id="money-container"></div>
-
-  <!-- フィードバック表示 -->
   <div id="feedback"></div>
+</div>
+
+<!-- おつりオーバーレイ -->
+<div id="change-overlay">
+  <div id="change-box">
+    <div id="change-msg"></div>
+    <button id="btn-receive-change">おつりを　もらう</button>
+  </div>
 </div>
 
 <div id="settings-modal">
   <div id="settings-content">
-    <h2 style="text-align: center; color: var(--text);">⚙️ せってい</h2>
-    
+    <h2 style="text-align:center; color:var(--text);">⚙️ せってい</h2>
+
     <div class="setting-group">
       <div class="setting-title">ほしいものの ネダン</div>
       <div class="num-input-row">
-        <span>いちばん やすい:</span>
-        <div><input type="number" id="set-min" value="10" step="10"> 円</div>
+        <label>いちばん やすい</label>
+        <div class="stepper">
+          <button class="stepper-btn" data-target="set-min" data-delta="-1">－</button>
+          <div class="stepper-val" id="set-min-disp">100</div>
+          <button class="stepper-btn" data-target="set-min" data-delta="1">＋</button>
+        </div>
       </div>
       <div class="num-input-row">
-        <span>いちばん たかい:</span>
-        <div><input type="number" id="set-max" value="800" step="10"> 円</div>
+        <label>いちばん たかい</label>
+        <div class="stepper">
+          <button class="stepper-btn" data-target="set-max" data-delta="-1">－</button>
+          <div class="stepper-val" id="set-max-disp">800</div>
+          <button class="stepper-btn" data-target="set-max" data-delta="1">＋</button>
+        </div>
       </div>
-      <div class="num-input-row">
-        <span>きざみ (1,10,50,100...):</span>
-        <div><input type="number" id="set-step" value="10" step="1"> 円</div>
+      <div style="margin-top:4px;">
+        <div style="font-size:15px; margin-bottom:6px;">きざみ</div>
+        <div class="step-btn-group" id="step-btn-group">
+          <button class="step-btn" data-step="1">1円</button>
+          <button class="step-btn selected" data-step="10">10円</button>
+          <button class="step-btn" data-step="50">50円</button>
+          <button class="step-btn" data-step="100">100円</button>
+        </div>
       </div>
     </div>
 
     <div class="setting-group">
       <div class="setting-title">さいしょの おさいふの なかみ</div>
-      <div class="wallet-init-grid" id="wallet-init-list">
-        <!-- JSで生成 -->
-      </div>
+      <div class="wallet-init-grid" id="wallet-init-list"></div>
     </div>
 
-    <button id="close-settings-btn" onclick="applySettings()">けってい して はじめる</button>
+    <button id="close-settings-btn">けってい して はじめる</button>
   </div>
 </div>
 
 <script>
 const EMOJIS = ['🍎','🍌','🍇','🍉','🍔','🍟','🍰','🍩','🍦','🧸','🚗','⚽️','🏀','🎮','📚','🖍','👕','👟','🌻','🌷'];
-const DENOMS = [5000, 1000, 500, 100, 50, 10, 5, 1]; // 10000円を削除
+const DENOMS = [5000, 1000, 500, 100, 50, 10, 5, 1];
 
 function coinSVG(val, size) {
   const C = {
@@ -372,13 +425,12 @@ function coinSVG(val, size) {
     500: { bg:'#a0a8b0', inner:'#c0c8d0', rim:'#1a3060', text:'500', hole:false },
   };
   const c = C[val];
-  if(!c) return '';
+  if (!c) return '';
   const r = size / 2;
   const holeR = size * 0.12;
   const ts = val >= 100 ? size * 0.28 : size * 0.36;
-  let textY = c.hole ? r * 0.55 + ts * 0.35 : r + ts * 0.38;
-  const hole = c.hole ? `<circle cx="${r}" cy="${r}" r="${holeR}" fill="var(--bg)" stroke="${c.rim}" stroke-width="1"/>` : '';
-
+  const textY = c.hole ? r * 0.55 + ts * 0.35 : r + ts * 0.38;
+  const hole = c.hole ? `<circle cx="${r}" cy="${r}" r="${holeR}" fill="#f5f0e6" stroke="${c.rim}" stroke-width="1"/>` : '';
   return `<svg width="${size}" height="${size}" viewBox="0 0 ${size} ${size}" xmlns="http://www.w3.org/2000/svg">
   <circle cx="${r}" cy="${r}" r="${r-1}" fill="${c.rim}"/>
   <circle cx="${r}" cy="${r}" r="${r-3}" fill="${c.bg}"/>
@@ -390,11 +442,11 @@ function coinSVG(val, size) {
 
 function noteSVG(val, w, h) {
   const N = {
-    1000:  { bg:'#ede0c4', border:'#7a5010', inner:'#f8f0dc', text:'1000'  },
-    5000:  { bg:'#e8ddc0', border:'#5a6820', inner:'#f5ecd4', text:'5000'  },
+    1000: { bg:'#ede0c4', border:'#7a5010', inner:'#f8f0dc', text:'1000' },
+    5000: { bg:'#e8ddc0', border:'#5a6820', inner:'#f5ecd4', text:'5000' },
   };
   const c = N[val];
-  if(!c) return '';
+  if (!c) return '';
   const ts = h * 0.38;
   return `<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}" xmlns="http://www.w3.org/2000/svg">
   <rect x="1" y="1" width="${w-2}" height="${h-2}" rx="4" fill="${c.border}"/>
@@ -407,191 +459,203 @@ function noteSVG(val, w, h) {
 
 let state = {
   settings: {
-    priceMin: 10,
+    priceMin: 100,
     priceMax: 800,
     priceStep: 10,
-    initWallet: { 5000:0, 1000:1, 500:2, 100:0, 50:3, 10:5, 5:0, 1:0 }
+    initWallet: { 5000:0, 1000:0, 500:2, 100:2, 50:2, 10:5, 5:0, 1:0 }
   },
-  moneys: [], 
+  moneys: [],
   targetPrice: 0,
   targetItem: '',
   moneyIdCounter: 0,
-  walletView: 'grid' // 'stacked' (かさなる) or 'grid' (ぜんぶみえる)
+  walletView: 'grid'
 };
 
-function initApp() {
+function buildSettingsUI() {
+  document.querySelectorAll('.step-btn').forEach(btn => {
+    btn.classList.toggle('selected', parseInt(btn.dataset.step) === state.settings.priceStep);
+  });
+  document.getElementById('set-min-disp').textContent = state.settings.priceMin;
+  document.getElementById('set-max-disp').textContent = state.settings.priceMax;
+
+  const list = document.getElementById('wallet-init-list');
+  list.innerHTML = '';
+  DENOMS.forEach(val => {
+    const item = document.createElement('div');
+    item.className = 'wallet-init-item';
+    item.innerHTML = `
+      <span class="denom-name">${val}円</span>
+      <div class="stepper">
+        <button class="stepper-btn" data-init="${val}" data-delta="-1">－</button>
+        <div class="stepper-val" id="init-disp-${val}">${state.settings.initWallet[val]}</div>
+        <button class="stepper-btn" data-init="${val}" data-delta="1">＋</button>
+      </div>
+    `;
+    list.appendChild(item);
+  });
+}
+
+function openSettings() {
   buildSettingsUI();
+  document.getElementById('settings-modal').style.display = 'flex';
+}
+
+function applySettings() {
+  if (state.settings.priceMin > state.settings.priceMax) {
+    let t = state.settings.priceMin;
+    state.settings.priceMin = state.settings.priceMax;
+    state.settings.priceMax = t;
+  }
+  const totalInit = DENOMS.reduce((s, v) => s + state.settings.initWallet[v], 0);
+  if (totalInit === 0) {
+    alert('おさいふに おかねを いれてね！');
+    return;
+  }
+  document.getElementById('settings-modal').style.display = 'none';
   resetWallet();
   nextQuestion();
-  window.addEventListener('resize', renderMoneys);
 }
 
 function resetWallet() {
   state.moneys = [];
   state.moneyIdCounter = 0;
-  for (let val of DENOMS) {
-    let count = state.settings.initWallet[val];
-    for (let i = 0; i < count; i++) {
-      addMoney(val, 'wallet');
-    }
+  document.getElementById('money-container').innerHTML = '';
+  for (const val of DENOMS) {
+    const count = state.settings.initWallet[val];
+    for (let i = 0; i < count; i++) addMoney(val, 'wallet');
   }
 }
 
 function addMoney(val, loc) {
-  let type = val >= 1000 ? 'note' : 'coin';
-  state.moneys.push({
-    id: state.moneyIdCounter++,
-    val: val,
-    type: type,
-    loc: loc,
-    zIndex: state.moneyIdCounter
-  });
+  const type = val >= 1000 ? 'note' : 'coin';
+  state.moneys.push({ id: state.moneyIdCounter++, val, type, loc, zIndex: state.moneyIdCounter });
 }
 
 function nextQuestion() {
-  let min = state.settings.priceMin;
-  let max = state.settings.priceMax;
-  let step = state.settings.priceStep;
-  
-  let steps = Math.floor((max - min) / step);
-  let randomStep = Math.floor(Math.random() * (steps + 1));
-  state.targetPrice = min + (randomStep * step);
-  
+  const min = state.settings.priceMin;
+  const max = state.settings.priceMax;
+  const step = state.settings.priceStep;
+  const steps = Math.floor((max - min) / step);
+  state.targetPrice = min + Math.floor(Math.random() * (steps + 1)) * step;
   state.targetItem = EMOJIS[Math.floor(Math.random() * EMOJIS.length)];
-  
   document.getElementById('item-emoji').textContent = state.targetItem;
   document.getElementById('item-price').textContent = state.targetPrice + '円';
-  
   const emojiEl = document.getElementById('item-emoji');
   emojiEl.style.transform = 'scale(1.2) rotate(10deg)';
   setTimeout(() => { emojiEl.style.transform = 'scale(1) rotate(0deg)'; }, 300);
-
   renderMoneys();
 }
 
-function toggleWalletView() {
-  state.walletView = state.walletView === 'stacked' ? 'grid' : 'stacked';
-  const btn = document.getElementById('view-toggle-btn');
-  btn.textContent = state.walletView === 'stacked' ? 'かさなる表示' : 'ぜんぶ見える表示';
-  renderMoneys();
+function getMoneySize(m) {
+  const base = window.innerWidth > 768 ? 60 : 50;
+  if (m.type === 'note') {
+    return { w: base * 1.5, h: base * 0.85 };
+  }
+  let s = base;
+  if (m.val === 500) s *= 1.1;
+  if (m.val <= 5) s *= 0.85;
+  return { w: s, h: s };
 }
 
 function renderMoneys() {
   const container = document.getElementById('money-container');
-  
+
+  // 存在しないお金のDOM要素を削除
+  const validIds = new Set(state.moneys.map(m => 'money-' + m.id));
+  Array.from(container.children).forEach(el => {
+    if (!validIds.has(el.id)) el.remove();
+  });
+
   state.moneys.forEach(m => {
     let el = document.getElementById('money-' + m.id);
     if (!el) {
       el = document.createElement('div');
       el.id = 'money-' + m.id;
       el.className = 'money-item';
-      el.onclick = () => handleMoneyClick(m.id);
-      
-      // お札のサイズを硬貨とのバランスを見て縮小 (1.8 -> 1.5倍)
-      let size = window.innerWidth > 768 ? 60 : 50; 
-      if (m.val === 500) size *= 1.1;
-      if (m.val <= 5) size *= 0.85;
-      
-      let noteW = size * 1.5;
-      let noteH = size * 0.85;
-      
-      if (m.type === 'note') {
-        el.innerHTML = noteSVG(m.val, noteW, noteH);
-        el.style.width = noteW + 'px'; el.style.height = noteH + 'px';
-      } else {
-        el.innerHTML = coinSVG(m.val, size);
-        el.style.width = size + 'px'; el.style.height = size + 'px';
-      }
+      el.dataset.val = m.val;
+      const { w, h } = getMoneySize(m);
+      el.style.width = w + 'px';
+      el.style.height = h + 'px';
+      el.innerHTML = m.type === 'note' ? noteSVG(m.val, w, h) : coinSVG(m.val, w, h);
+      const moneyId = m.id;
+      el.addEventListener('click', () => handleMoneyClick(moneyId));
       container.appendChild(el);
+    } else {
+      // 金種不一致の場合はSVGを再生成
+      if (parseInt(el.dataset.val) !== m.val) {
+        const { w, h } = getMoneySize(m);
+        el.style.width = w + 'px';
+        el.style.height = h + 'px';
+        el.dataset.val = m.val;
+        el.innerHTML = m.type === 'note' ? noteSVG(m.val, w, h) : coinSVG(m.val, w, h);
+      }
     }
-    
-    let pos = calculatePosition(m);
+
+    const pos = calculatePosition(m);
     el.style.transform = `translate(${pos.x}px, ${pos.y}px)`;
     el.style.zIndex = m.zIndex;
-  });
-  
-  Array.from(container.children).forEach(el => {
-    let id = parseInt(el.id.replace('money-', ''));
-    if (!state.moneys.find(m => m.id === id)) el.remove();
   });
 }
 
 function calculatePosition(money) {
-  let el = document.getElementById('money-' + money.id);
-  let w = el.offsetWidth || 50;
-  let h = el.offsetHeight || 50;
-  
+  const { w, h } = getMoneySize(money);
+
   if (money.loc === 'wallet') {
-    let zone = document.getElementById('zone-' + money.val);
-    if (!zone) return {x:0, y:0};
-    let rect = zone.getBoundingClientRect();
-    
-    let sameDenoms = state.moneys.filter(m => m.loc === 'wallet' && m.val === money.val).sort((a,b)=>a.id - b.id);
-    let index = sameDenoms.findIndex(m => m.id === money.id);
-    
+    const zone = document.getElementById('zone-' + money.val);
+    if (!zone) return { x: 0, y: 0 };
+    const rect = zone.getBoundingClientRect();
+    const sameDenoms = state.moneys
+      .filter(m => m.loc === 'wallet' && m.val === money.val)
+      .sort((a, b) => a.id - b.id);
+    const index = sameDenoms.findIndex(m => m.id === money.id);
+
     if (state.walletView === 'stacked') {
-      // 重ねて表示する
-      let baseX = rect.left + (rect.width - w) / 2;
-      let baseY = rect.top + (rect.height - h) / 2;
-      
-      if (money.type === 'note') {
-        return { x: baseX, y: baseY - index * 4 };
-      } else {
-        return { x: baseX - index * 2, y: baseY - index * 3 };
-      }
+      const baseX = rect.left + (rect.width - w) / 2;
+      const baseY = rect.top + (rect.height - h) / 2;
+      if (money.type === 'note') return { x: baseX, y: baseY - index * 4 };
+      return { x: baseX - index * 2, y: baseY - index * 3 };
     } else {
-      // ぜんぶみえるように並べる
-      let pad = 4;
-      let availW = rect.width - pad * 2;
-      let availH = rect.height - pad * 2;
-      
+      const pad = 4;
+      const availW = rect.width - pad * 2;
+      const availH = rect.height - pad * 2;
       let cols = Math.floor(availW / w);
-      if(cols < 1) cols = 1;
-      
-      let row = Math.floor(index / cols);
-      let col = index % cols;
-      
-      let totalRows = Math.ceil(sameDenoms.length / cols);
+      if (cols < 1) cols = 1;
+      const row = Math.floor(index / cols);
+      const col = index % cols;
+      const totalRows = Math.ceil(sameDenoms.length / cols);
       let rowSpacing = h;
-      // 縦にはみ出す場合は少し重ねる
       if (totalRows * h > availH && totalRows > 1) {
         rowSpacing = (availH - h) / (totalRows - 1);
       }
-      
-      let startX = rect.left + pad + (availW - cols * w) / 2;
-      let startY = rect.top + pad;
-      
+      const startX = rect.left + pad + (availW - cols * w) / 2;
+      const startY = rect.top + pad;
       return { x: startX + col * w, y: startY + row * rowSpacing };
     }
-    
-  } else if (money.loc === 'tray') {
-    let tray = document.getElementById('tray-area');
-    let rect = tray.getBoundingClientRect();
-    
-    let trayMoneys = state.moneys.filter(m => m.loc === 'tray').sort((a,b)=>a.id - b.id);
-    let index = trayMoneys.findIndex(m => m.id === money.id);
-    
-    let cols = Math.floor(rect.width / 60); 
-    if(cols < 1) cols = 1;
-    let row = Math.floor(index / cols);
-    let col = index % cols;
-    
-    let startY = rect.top + 10;
-    let x = rect.left + 20 + col * 60;
-    let y = startY + row * 50;
-    
-    let randX = (money.id * 13 % 16) - 8;
-    let randY = (money.id * 17 % 16) - 8;
-    
-    x = Math.max(rect.left + 5, Math.min(x + randX, rect.right - w - 5));
-    y = Math.max(startY, Math.min(y + randY, rect.bottom - h - 5));
 
-    return { x: x, y: y };
+  } else {
+    const tray = document.getElementById('tray-area');
+    const rect = tray.getBoundingClientRect();
+    // 高額順（降順）に並べる
+    const trayMoneys = state.moneys.filter(m => m.loc === 'tray').sort((a, b) => b.val - a.val || a.id - b.id);
+    const index = trayMoneys.findIndex(m => m.id === money.id);
+    const pad = 8;
+    const slotW = Math.max(w, 60);
+    const cols = Math.max(1, Math.floor((rect.width - pad * 2) / slotW));
+    const row = Math.floor(index / cols);
+    const col = index % cols;
+    const startX = rect.left + pad;
+    const startY = rect.top + pad;
+    const slotH = Math.max(h, 50);
+    let x = startX + col * slotW + (slotW - w) / 2;
+    let y = startY + row * slotH + (slotH - h) / 2;
+    x = Math.max(rect.left + 2, Math.min(x, rect.right - w - 2));
+    y = Math.max(rect.top + 2, Math.min(y, rect.bottom - h - 2));
+    return { x, y };
   }
 }
 
 function handleMoneyClick(id) {
-  let m = state.moneys.find(m => m.id === id);
+  const m = state.moneys.find(m => m.id === id);
   if (!m) return;
   m.zIndex = ++state.moneyIdCounter;
   m.loc = m.loc === 'wallet' ? 'tray' : 'wallet';
@@ -603,92 +667,80 @@ function getTotalAmount() {
 }
 
 function handleCannotBuy() {
-  let totalMoney = getTotalAmount();
-  let isCorrect = false;
-
-  // 手持ちの全額が商品の値段未満の場合のみ「やめる」が正解
+  const totalMoney = getTotalAmount();
   if (totalMoney < state.targetPrice) {
-    isCorrect = true;
-  }
-
-  if (isCorrect) {
     playCorrect();
-    showFeedback("せいかい！\nおかねが たりないから\nかえないね");
-    state.moneys.forEach(m => m.loc = 'wallet');
+    showFeedback('そうだね');
+    state.moneys.forEach(m => { m.loc = 'wallet'; });
     renderMoneys();
     setTimeout(nextQuestion, 1500);
   } else {
     playWrong();
-    showFeedback("かえるよ！\nおさいふを よくみて！", true);
+    showFeedback('かえるよ♪\nよくみて！', true);
   }
 }
 
 function handlePay() {
-  let trayTotal = state.moneys.filter(m => m.loc === 'tray').reduce((sum, m) => sum + m.val, 0);
-  
+  const trayTotal = state.moneys.filter(m => m.loc === 'tray').reduce((sum, m) => sum + m.val, 0);
   if (trayTotal === 0) {
     playWrong();
-    showFeedback("おかねを だしてね", true);
+    showFeedback('おかねを だしてね', true);
     return;
   }
-
-  // 出している金額が商品以上なら支払い成功
   if (trayTotal >= state.targetPrice) {
     paymentSuccess(trayTotal - state.targetPrice);
   } else {
     playWrong();
-    showFeedback("たりないよ！", true);
+    showFeedback('たりないよ！', true);
   }
 }
 
 function paymentSuccess(changeAmount = 0) {
   playCorrect();
-  
-  let shopRect = document.getElementById('item-emoji').getBoundingClientRect();
-  let targetX = shopRect.left + shopRect.width / 2 - 25;
-  let targetY = shopRect.top + shopRect.height / 2 - 25;
-
-  let trayMoneys = state.moneys.filter(m => m.loc === 'tray');
-  
-  trayMoneys.forEach(m => {
-    let el = document.getElementById('money-' + m.id);
-    if(el) {
+  const shopRect = document.getElementById('item-emoji').getBoundingClientRect();
+  const targetX = shopRect.left + shopRect.width / 2 - 25;
+  const targetY = shopRect.top + shopRect.height / 2 - 25;
+  state.moneys.filter(m => m.loc === 'tray').forEach(m => {
+    const el = document.getElementById('money-' + m.id);
+    if (el) {
       el.style.transform = `translate(${targetX}px, ${targetY}px) scale(0.2)`;
       el.style.opacity = '0';
     }
   });
-
   state.moneys = state.moneys.filter(m => m.loc !== 'tray');
 
-  let msg = "かえたよ！";
   if (changeAmount > 0) {
-    msg = `かえたよ！\nおつりは ${changeAmount}円`;
-    let changeMoneys = getChangeDenoms(changeAmount);
-    changeMoneys.forEach(val => addMoney(val, 'wallet'));
+    // おつりがある場合はオーバーレイで止める
+    const overlay = document.getElementById('change-overlay');
+    document.getElementById('change-msg').textContent = `かえたよ！\nおつりは ${changeAmount}円`;
+    overlay.style.display = 'flex';
+    // おつりを受け取るボタン
+    document.getElementById('btn-receive-change').onclick = () => {
+      overlay.style.display = 'none';
+      getChangeDenoms(changeAmount).forEach(val => addMoney(val, 'wallet'));
+      renderMoneys();
+      afterPayment();
+    };
+  } else {
+    showFeedback('かえたよ！');
+    setTimeout(() => afterPayment(), 1200);
   }
+}
 
-  showFeedback(msg);
-
-  setTimeout(() => {
-    renderMoneys();
-    
-    if (getTotalAmount() < state.settings.priceMin) {
-      showFeedback("おさいふが\nからっぽになったよ！");
-      setTimeout(openSettings, 2000); 
-    } else {
-      nextQuestion();
-    }
-  }, 1200);
+function afterPayment() {
+  if (getTotalAmount() < state.settings.priceMin) {
+    showFeedback('もう　かえなく\nなったね');
+    setTimeout(openSettings, 2000);
+  } else {
+    nextQuestion();
+  }
 }
 
 function getChangeDenoms(amount) {
-  let change = [];
+  const change = [];
   let remaining = amount;
-  for (let d of DENOMS) {
-    while (remaining >= d) {
-      change.push(d);
-      remaining -= d;
-    }
+  for (const d of DENOMS) {
+    while (remaining >= d) { change.push(d); remaining -= d; }
   }
   return change;
 }
@@ -699,7 +751,7 @@ function getACtx() { if (!audioCtx) audioCtx = new AudioCtx(); return audioCtx; 
 
 function playCorrect() {
   const ctx = getACtx(), t = ctx.currentTime;
-  [ [1046.50, t, 0.1], [1318.51, t+0.08, 0.1], [1567.98, t+0.16, 0.3] ].forEach(([freq, start, dur]) => {
+  [[1046.50, t, 0.1], [1318.51, t+0.08, 0.1], [1567.98, t+0.16, 0.3]].forEach(([freq, start, dur]) => {
     const o = ctx.createOscillator(), g = ctx.createGain();
     o.type = 'sine'; o.frequency.value = freq;
     g.gain.setValueAtTime(0, start);
@@ -727,64 +779,55 @@ function showFeedback(msg, autoHide = false) {
   const el = document.getElementById('feedback');
   el.innerText = msg;
   el.classList.add('show');
-  
-  if(el.hideTimer) clearTimeout(el.hideTimer);
-  
-  if (autoHide) {
-    el.hideTimer = setTimeout(() => { el.classList.remove('show'); }, 1500);
-  } else {
-    el.hideTimer = setTimeout(() => { el.classList.remove('show'); }, 2000);
-  }
+  if (el.hideTimer) clearTimeout(el.hideTimer);
+  el.hideTimer = setTimeout(() => el.classList.remove('show'), autoHide ? 1500 : 2000);
 }
 
-function buildSettingsUI() {
-  const list = document.getElementById('wallet-init-list');
-  list.innerHTML = '';
-  DENOMS.forEach(val => {
-    let item = document.createElement('div');
-    item.className = 'wallet-init-item';
-    item.innerHTML = `
-      <span>${val}円</span>
-      <div><input type="number" id="init-${val}" value="${state.settings.initWallet[val]}" min="0" max="30"> 枚</div>
-    `;
-    list.appendChild(item);
+document.addEventListener('DOMContentLoaded', () => {
+  document.getElementById('gear-btn').addEventListener('click', openSettings);
+  document.getElementById('btn-pay').addEventListener('click', handlePay);
+  document.getElementById('btn-cancel').addEventListener('click', handleCannotBuy);
+  document.getElementById('btn-restart').addEventListener('click', openSettings);
+  document.getElementById('close-settings-btn').addEventListener('click', applySettings);
+  window.addEventListener('resize', renderMoneys);
+
+  document.getElementById('settings-content').addEventListener('click', e => {
+    // 価格ステッパー
+    if (e.target.dataset.target) {
+      const key = e.target.dataset.target;
+      const delta = parseInt(e.target.dataset.delta);
+      const step = state.settings.priceStep || 10;
+      if (key === 'set-min') {
+        state.settings.priceMin = Math.max(step, state.settings.priceMin + delta * step);
+        document.getElementById('set-min-disp').textContent = state.settings.priceMin;
+      } else if (key === 'set-max') {
+        state.settings.priceMax = Math.max(step, state.settings.priceMax + delta * step);
+        document.getElementById('set-max-disp').textContent = state.settings.priceMax;
+      }
+    }
+    // 財布枚数ステッパー
+    if (e.target.dataset.init) {
+      const val = parseInt(e.target.dataset.init);
+      const delta = parseInt(e.target.dataset.delta);
+      state.settings.initWallet[val] = Math.max(0, Math.min(30, (state.settings.initWallet[val] || 0) + delta));
+      document.getElementById(`init-disp-${val}`).textContent = state.settings.initWallet[val];
+    }
+    // きざみボタン
+    if (e.target.dataset.step) {
+      const step = parseInt(e.target.dataset.step);
+      state.settings.priceStep = step;
+      document.querySelectorAll('.step-btn').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.step) === step));
+      state.settings.priceMin = Math.max(step, Math.round(state.settings.priceMin / step) * step);
+      state.settings.priceMax = Math.max(step, Math.round(state.settings.priceMax / step) * step);
+      document.getElementById('set-min-disp').textContent = state.settings.priceMin;
+      document.getElementById('set-max-disp').textContent = state.settings.priceMax;
+    }
   });
-}
 
-function openSettings() {
-  document.getElementById('settings-modal').style.display = 'flex';
-}
-
-function applySettings() {
-  state.settings.priceMin = parseInt(document.getElementById('set-min').value) || 10;
-  state.settings.priceMax = parseInt(document.getElementById('set-max').value) || 500;
-  state.settings.priceStep = parseInt(document.getElementById('set-step').value) || 10;
-  
-  if(state.settings.priceMin > state.settings.priceMax) {
-    let temp = state.settings.priceMin;
-    state.settings.priceMin = state.settings.priceMax;
-    state.settings.priceMax = temp;
-  }
-  
-  let totalInit = 0;
-  DENOMS.forEach(val => {
-    let v = parseInt(document.getElementById(`init-${val}`).value) || 0;
-    state.settings.initWallet[val] = v;
-    totalInit += v;
-  });
-
-  if (totalInit === 0) {
-    alert("おさいふに おかねを いれてね！");
-    return;
-  }
-
-  document.getElementById('settings-modal').style.display = 'none';
+  buildSettingsUI();
   resetWallet();
   nextQuestion();
-}
-
-window.addEventListener('load', initApp);
-
+});
 </script>
 </body>
 </html>
