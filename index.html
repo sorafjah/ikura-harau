@@ -254,10 +254,16 @@
   .num-input-row {
     display: flex; align-items: center; justify-content: space-between;
     margin-bottom: 10px;
+    gap: 8px;
   }
-  .num-input-row label { font-size: 15px; }
+  .num-input-row label {
+    font-size: 14px;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
   .stepper {
     display: flex; align-items: center; gap: 6px;
+    flex-shrink: 0;
   }
   .stepper-btn {
     width: 44px; height: 44px;
@@ -270,13 +276,29 @@
     user-select: none;
   }
   .stepper-btn:active { transform: translateY(3px); box-shadow: 0 0 0; }
+
+  /* ★ stepper-val を input に変更したときのスタイル */
   .stepper-val {
-    min-width: 70px; text-align: center;
+    width: 80px; min-width: 0; text-align: center;
     font-size: 20px; font-weight: bold;
     background: #fff; border-radius: 10px;
     padding: 6px 8px;
     border: 2px solid var(--border);
+    font-family: inherit;
+    color: var(--text);
+    -webkit-appearance: none;
+    appearance: none;
   }
+  .stepper-val:focus {
+    outline: none;
+    border-color: var(--accent);
+    box-shadow: 0 0 0 3px rgba(230,126,34,0.25);
+  }
+  /* スピナー非表示（Chrome/Safari） */
+  .stepper-val::-webkit-inner-spin-button,
+  .stepper-val::-webkit-outer-spin-button { -webkit-appearance: none; margin: 0; }
+  /* Firefox */
+  .stepper-val[type=number] { -moz-appearance: textfield; }
 
   /* きざみボタン */
   .step-btn-group {
@@ -305,11 +327,11 @@
     display: flex; align-items: center; justify-content: space-between;
   }
   .wallet-init-item .denom-name {
-    font-size: 16px; font-weight: bold; min-width: 50px;
+    font-size: 14px; font-weight: bold; white-space: nowrap; flex-shrink: 0;
   }
-  .wallet-init-item .stepper { gap: 4px; }
-  .wallet-init-item .stepper-btn { width: 38px; height: 38px; font-size: 20px; }
-  .wallet-init-item .stepper-val { min-width: 44px; font-size: 18px; padding: 4px 6px; }
+  .wallet-init-item .stepper { gap: 4px; flex-shrink: 0; }
+  .wallet-init-item .stepper-btn { width: 36px; height: 36px; font-size: 18px; }
+  .wallet-init-item .stepper-val { width: 40px; min-width: 0; font-size: 16px; padding: 4px 4px; }
   
   #close-settings-btn {
     padding: 16px; background: var(--accent); color: #fff; border: none;
@@ -379,7 +401,7 @@
         <label>いちばん やすい</label>
         <div class="stepper">
           <button class="stepper-btn" data-target="set-min" data-delta="-1">－</button>
-          <div class="stepper-val" id="set-min-disp">100</div>
+          <input type="number" class="stepper-val" id="set-min-disp" inputmode="numeric" min="1" value="100">
           <button class="stepper-btn" data-target="set-min" data-delta="1">＋</button>
         </div>
       </div>
@@ -387,7 +409,7 @@
         <label>いちばん たかい</label>
         <div class="stepper">
           <button class="stepper-btn" data-target="set-max" data-delta="-1">－</button>
-          <div class="stepper-val" id="set-max-disp">800</div>
+          <input type="number" class="stepper-val" id="set-max-disp" inputmode="numeric" min="1" value="800">
           <button class="stepper-btn" data-target="set-max" data-delta="1">＋</button>
         </div>
       </div>
@@ -471,12 +493,21 @@ let state = {
   walletView: 'grid'
 };
 
+// ---- input の値を state に同期してクランプする共通関数 ----
+function clampPriceInput(inputEl, stateKey, min, max) {
+  let v = parseInt(inputEl.value, 10);
+  if (isNaN(v) || v < min) v = min;
+  if (max !== undefined && v > max) v = max;
+  inputEl.value = v;
+  state.settings[stateKey] = v;
+}
+
 function buildSettingsUI() {
   document.querySelectorAll('.step-btn').forEach(btn => {
     btn.classList.toggle('selected', parseInt(btn.dataset.step) === state.settings.priceStep);
   });
-  document.getElementById('set-min-disp').textContent = state.settings.priceMin;
-  document.getElementById('set-max-disp').textContent = state.settings.priceMax;
+  document.getElementById('set-min-disp').value = state.settings.priceMin;
+  document.getElementById('set-max-disp').value = state.settings.priceMax;
 
   const list = document.getElementById('wallet-init-list');
   list.innerHTML = '';
@@ -487,11 +518,27 @@ function buildSettingsUI() {
       <span class="denom-name">${val}円</span>
       <div class="stepper">
         <button class="stepper-btn" data-init="${val}" data-delta="-1">－</button>
-        <div class="stepper-val" id="init-disp-${val}">${state.settings.initWallet[val]}</div>
+        <input type="number" class="stepper-val" id="init-disp-${val}"
+          inputmode="numeric" min="0" max="30"
+          value="${state.settings.initWallet[val]}">
         <button class="stepper-btn" data-init="${val}" data-delta="1">＋</button>
       </div>
     `;
     list.appendChild(item);
+  });
+
+  // 財布枚数 input の change イベントを一括登録
+  DENOMS.forEach(val => {
+    const inp = document.getElementById(`init-disp-${val}`);
+    inp.addEventListener('change', () => {
+      let v = parseInt(inp.value, 10);
+      if (isNaN(v) || v < 0) v = 0;
+      if (v > 30) v = 30;
+      inp.value = v;
+      state.settings.initWallet[val] = v;
+    });
+    // blur でも同じ処理（キーボードを閉じたタイミング）
+    inp.addEventListener('blur', () => inp.dispatchEvent(new Event('change')));
   });
 }
 
@@ -501,10 +548,19 @@ function openSettings() {
 }
 
 function applySettings() {
+  // 価格の input から最新値を取得
+  const minInp = document.getElementById('set-min-disp');
+  const maxInp = document.getElementById('set-max-disp');
+  const step = state.settings.priceStep;
+  clampPriceInput(minInp, 'priceMin', step);
+  clampPriceInput(maxInp, 'priceMax', step);
+
   if (state.settings.priceMin > state.settings.priceMax) {
     let t = state.settings.priceMin;
     state.settings.priceMin = state.settings.priceMax;
     state.settings.priceMax = t;
+    minInp.value = state.settings.priceMin;
+    maxInp.value = state.settings.priceMax;
   }
   const totalInit = DENOMS.reduce((s, v) => s + state.settings.initWallet[v], 0);
   if (totalInit === 0) {
@@ -560,7 +616,6 @@ function getMoneySize(m) {
 function renderMoneys() {
   const container = document.getElementById('money-container');
 
-  // 存在しないお金のDOM要素を削除
   const validIds = new Set(state.moneys.map(m => 'money-' + m.id));
   Array.from(container.children).forEach(el => {
     if (!validIds.has(el.id)) el.remove();
@@ -581,7 +636,6 @@ function renderMoneys() {
       el.addEventListener('click', () => handleMoneyClick(moneyId));
       container.appendChild(el);
     } else {
-      // 金種不一致の場合はSVGを再生成
       if (parseInt(el.dataset.val) !== m.val) {
         const { w, h } = getMoneySize(m);
         el.style.width = w + 'px';
@@ -635,7 +689,6 @@ function calculatePosition(money) {
   } else {
     const tray = document.getElementById('tray-area');
     const rect = tray.getBoundingClientRect();
-    // 高額順（降順）に並べる
     const trayMoneys = state.moneys.filter(m => m.loc === 'tray').sort((a, b) => b.val - a.val || a.id - b.id);
     const index = trayMoneys.findIndex(m => m.id === money.id);
     const pad = 8;
@@ -710,11 +763,9 @@ function paymentSuccess(changeAmount = 0) {
   state.moneys = state.moneys.filter(m => m.loc !== 'tray');
 
   if (changeAmount > 0) {
-    // おつりがある場合はオーバーレイで止める
     const overlay = document.getElementById('change-overlay');
     document.getElementById('change-msg').textContent = `かえたよ！\nおつりは ${changeAmount}円`;
     overlay.style.display = 'flex';
-    // おつりを受け取るボタン
     document.getElementById('btn-receive-change').onclick = () => {
       overlay.style.display = 'none';
       getChangeDenoms(changeAmount).forEach(val => addMoney(val, 'wallet'));
@@ -791,26 +842,43 @@ document.addEventListener('DOMContentLoaded', () => {
   document.getElementById('close-settings-btn').addEventListener('click', applySettings);
   window.addEventListener('resize', renderMoneys);
 
+  // ---- 価格 input の直接入力 ----
+  const minInp = document.getElementById('set-min-disp');
+  const maxInp = document.getElementById('set-max-disp');
+
+  function syncMinInput() {
+    clampPriceInput(minInp, 'priceMin', state.settings.priceStep);
+  }
+  function syncMaxInput() {
+    clampPriceInput(maxInp, 'priceMax', state.settings.priceStep);
+  }
+  minInp.addEventListener('change', syncMinInput);
+  minInp.addEventListener('blur',   syncMinInput);
+  maxInp.addEventListener('change', syncMaxInput);
+  maxInp.addEventListener('blur',   syncMaxInput);
+
+  // ---- 設定コンテンツのクリックデリゲーション ----
   document.getElementById('settings-content').addEventListener('click', e => {
-    // 価格ステッパー
+    // 価格ステッパーボタン
     if (e.target.dataset.target) {
       const key = e.target.dataset.target;
       const delta = parseInt(e.target.dataset.delta);
       const step = state.settings.priceStep || 10;
       if (key === 'set-min') {
         state.settings.priceMin = Math.max(step, state.settings.priceMin + delta * step);
-        document.getElementById('set-min-disp').textContent = state.settings.priceMin;
+        minInp.value = state.settings.priceMin;
       } else if (key === 'set-max') {
         state.settings.priceMax = Math.max(step, state.settings.priceMax + delta * step);
-        document.getElementById('set-max-disp').textContent = state.settings.priceMax;
+        maxInp.value = state.settings.priceMax;
       }
     }
-    // 財布枚数ステッパー
+    // 財布枚数ステッパーボタン
     if (e.target.dataset.init) {
       const val = parseInt(e.target.dataset.init);
       const delta = parseInt(e.target.dataset.delta);
-      state.settings.initWallet[val] = Math.max(0, Math.min(30, (state.settings.initWallet[val] || 0) + delta));
-      document.getElementById(`init-disp-${val}`).textContent = state.settings.initWallet[val];
+      const newVal = Math.max(0, Math.min(30, (state.settings.initWallet[val] || 0) + delta));
+      state.settings.initWallet[val] = newVal;
+      document.getElementById(`init-disp-${val}`).value = newVal;
     }
     // きざみボタン
     if (e.target.dataset.step) {
@@ -819,8 +887,8 @@ document.addEventListener('DOMContentLoaded', () => {
       document.querySelectorAll('.step-btn').forEach(b => b.classList.toggle('selected', parseInt(b.dataset.step) === step));
       state.settings.priceMin = Math.max(step, Math.round(state.settings.priceMin / step) * step);
       state.settings.priceMax = Math.max(step, Math.round(state.settings.priceMax / step) * step);
-      document.getElementById('set-min-disp').textContent = state.settings.priceMin;
-      document.getElementById('set-max-disp').textContent = state.settings.priceMax;
+      minInp.value = state.settings.priceMin;
+      maxInp.value = state.settings.priceMax;
     }
   });
 
